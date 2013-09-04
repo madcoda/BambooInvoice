@@ -89,6 +89,11 @@ $this->load->view('header');
 		</div>
 
 		<p>
+			<label for="days_payment_due"><span><?php echo $this->lang->line('settings_days_payment_due');?></span></label>
+			<input class="requiredfield" name="days_payment_due" type="text" id="days_payment_due" size="20" value="<?php echo ($this->validation->days_payment_due) ? ($this->validation->days_payment_due) : ($row->days_payment_due);?>" />
+			(ie: 30) <?php echo $this->validation->days_payment_due_error; ?>
+		</p>
+		<p>
 			<label><?php echo $this->lang->line('invoice_note');?> <?php echo $this->validation->invoice_note_error; ?><br />
 			<textarea name="invoice_note" id="invoice_note" cols="80" rows="3"><?php echo ($this->validation->invoice_note) ? ($this->validation->invoice_note) : ($row->invoice_note);?></textarea>
 			</label>

@@ -177,6 +177,7 @@ class Invoices extends MY_Controller {
 		$data['tax2_desc'] = $this->settings_model->get_setting('tax2_desc');
 		$data['tax2_rate'] = $this->settings_model->get_setting('tax2_rate');
 		$data['invoice_note_default'] = $this->settings_model->get_setting('invoice_note_default');
+		$data['days_payment_due_default'] = $this->settings_model->get_setting('days_payment_due');
 
 		$last_invoice_number = $this->invoices_model->lastInvoiceNumber($id);
 		($last_invoice_number != '') ? $data['lastInvoiceNumber'] = $last_invoice_number : $data['lastInvoiceNumber'] = '';
@@ -211,7 +212,8 @@ class Invoices extends MY_Controller {
 									'tax1_rate' => $this->input->post('tax1_rate'),
 									'tax2_desc' => $this->input->post('tax2_description'),
 									'tax2_rate' => $this->input->post('tax2_rate'),
-									'invoice_note' => $this->input->post('invoice_note')
+									'invoice_note' => $this->input->post('invoice_note'),
+									'days_payment_due' => $this->input->post('days_payment_due')
 								);
 
 			$invoice_id = $this->invoices_model->addInvoice($invoice_data);
@@ -282,14 +284,14 @@ class Invoices extends MY_Controller {
 		$data['row'] = $invoiceInfo->row();
 
 		$data['date_invoice_issued'] = formatted_invoice_date($data['row']->dateIssued);
-		$data['date_invoice_due'] = formatted_invoice_date($data['row']->dateIssued, $this->settings_model->get_setting('days_payment_due'));
+		$data['date_invoice_due'] = formatted_invoice_date($data['row']->dateIssued, $data['row']->days_payment_due);
 
 		if ($data['row']->amount_paid >= $data['row']->total_with_tax)
 		{
 			// paid invoices
 			$data['status'] = '<span>'.$this->lang->line('invoice_closed').'</span>';
 		}
-		elseif (mysql_to_unix($data['row']->dateIssued) >= time()-($this->settings_model->get_setting('days_payment_due') * 60*60*24))
+		elseif (mysql_to_unix($data['row']->dateIssued) >= time()-($data['row']->days_payment_due * 60*60*24))
 		{
 			// owing less then 30 days
 			$data['status'] = '<span>'.$this->lang->line('invoice_open').'</span>';
@@ -297,8 +299,8 @@ class Invoices extends MY_Controller {
 		else
 		{
 			// owing more then 30 days
-			$due_date = $data['row']->dateIssued + ($this->settings_model->get_setting('days_payment_due') * 60*60*24); 
-			$data['status'] = '<span class="error">'.timespan(mysql_to_unix($data['row']->dateIssued) + ($this->settings_model->get_setting('days_payment_due') * 60*60*24), now()). ' '.$this->lang->line('invoice_overdue').'</span>';
+			$due_date = $data['row']->dateIssued + ($data['row']->days_payment_due * 60*60*24); 
+			$data['status'] = '<span class="error">'.timespan(mysql_to_unix($data['row']->dateIssued) + ($data['row']->days_payment_due * 60*60*24), now()). ' '.$this->lang->line('invoice_overdue').'</span>';
 		}
 
 		$data['items'] = $this->invoices_model->getInvoiceItems($id);
@@ -393,7 +395,8 @@ class Invoices extends MY_Controller {
 											'tax1_rate' 		=> $this->input->post('tax1_rate'),
 											'tax2_desc' 		=> $this->input->post('tax2_description'),
 											'tax2_rate' 		=> $this->input->post('tax2_rate'),
-											'invoice_note' 		=> $this->input->post('invoice_note')
+											'invoice_note' 		=> $this->input->post('invoice_note'),
+											'days_payment_due'	=> $this->input->post('days_payment_due')
 									);
 
 				$invoice_id = $this->invoices_model->updateInvoice($this->input->post('id'), $invoice_data);
@@ -506,7 +509,8 @@ class Invoices extends MY_Controller {
 										'tax1_rate' => $this->input->post('tax1_rate'),
 										'tax2_desc' => $this->input->post('tax2_description'),
 										'tax2_rate' => $this->input->post('tax2_rate'),
-										'invoice_note' => $this->input->post('invoice_note')
+										'invoice_note' => $this->input->post('invoice_note'),
+										'days_payment_due' => $this->input->post('days_payment_due')
 									);
 
 				$invoice_id = $this->invoices_model->addInvoice($invoice_data);
@@ -729,7 +733,7 @@ class Invoices extends MY_Controller {
 		$data['client_note'] = $this->clients_model->get_client_info($data['row']->client_id)->client_notes;
 
 		$data['date_invoice_issued'] = formatted_invoice_date($data['row']->dateIssued);
-		$data['date_invoice_due'] = formatted_invoice_date($data['row']->dateIssued, $this->settings_model->get_setting('days_payment_due'));
+		$data['date_invoice_due'] = formatted_invoice_date($data['row']->dateIssued, $data['row']->days_payment_due);
 
 		$data['companyInfo'] = $this->settings_model->getCompanyInfo()->row();
 		$data['company_logo'] = $this->_get_logo('_pdf', 'pdf');
@@ -972,6 +976,7 @@ class Invoices extends MY_Controller {
 		$rules['invoice_number'] 	= 'trim|required|htmlspecialchars|max_length[12]|alpha_dash|callback_uniqueInvoice';
 		$rules['dateIssued'] 		= 'trim|htmlspecialchars|callback_dateIssued';
 		$rules['invoice_note'] 		= 'trim|htmlspecialchars|max_length[2000]';
+		$rules['days_payment_due'] 		= 'trim|required|numeric';
 		$rules['tax1_description'] 	= 'trim|htmlspecialchars|max_length[50]';
 		$rules['tax1_rate'] 		= 'trim|htmlspecialchars';
 		$rules['tax2_description'] 	= 'trim|htmlspecialchars|max_length[50]';
@@ -982,6 +987,7 @@ class Invoices extends MY_Controller {
 		$fields['invoice_number'] 	= $this->lang->line('invoice_number');
 		$fields['dateIssued'] 		= $this->lang->line('invoice_date_issued');
 		$fields['invoice_note'] 	= $this->lang->line('invoice_note');
+		$fields['days_payment_due'] = $this->lang->line('settings_days_payment_due');
 		$fields['tax1_description']	= $this->settings_model->get_setting('tax1_desc');
 		$fields['tax1_rate'] 		= $this->settings_model->get_setting('tax1_rate');
 		$fields['tax2_description']	= $this->settings_model->get_setting('tax1_desc');
@@ -999,6 +1005,7 @@ class Invoices extends MY_Controller {
 		$rules['invoice_number'] 	= 'trim|required|htmlspecialchars|max_length[50]|alpha_dash';
 		$rules['dateIssued'] 		= 'trim|htmlspecialchars|callback_dateIssued';
 		$rules['invoice_note'] 		= 'trim|htmlspecialchars|max_length[2000]';
+		$rules['days_payment_due'] 		= 'trim|required|numeric';
 		$rules['tax1_description'] 	= 'trim|htmlspecialchars|max_length[50]';
 		$rules['tax1_rate'] 		= 'trim|htmlspecialchars';
 		$rules['tax2_description'] 	= 'trim|htmlspecialchars|max_length[50]';
@@ -1009,6 +1016,7 @@ class Invoices extends MY_Controller {
 		$fields['invoice_number'] 	= $this->lang->line('invoice_number');
 		$fields['dateIssued'] 		= $this->lang->line('invoice_date_issued');
 		$fields['invoice_note'] 	= $this->lang->line('invoice_note');
+		$fields['days_payment_due'] = $this->lang->line('settings_days_payment_due');
 		$fields['tax1_description']	= $this->settings_model->get_setting('tax1_desc');
 		$fields['tax1_rate'] 		= $this->settings_model->get_setting('tax1_rate');
 		$fields['tax2_description']	= $this->settings_model->get_setting('tax1_desc');

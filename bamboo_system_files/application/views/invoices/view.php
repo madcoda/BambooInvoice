@@ -182,7 +182,7 @@ if ($row->amount_paid < $row->total_with_tax):
 	</p>
 
 	<p>
-		<strong><?php echo $this->lang->line('invoice_payment_term');?>: <?php echo $this->settings_model->get_setting('days_payment_due');?> <?php echo $this->lang->line('date_days');?></strong> 
+		<strong><?php echo $this->lang->line('invoice_payment_term');?>: <?php echo $row->days_payment_due; ?> <?php echo $this->lang->line('date_days');?></strong> 
 		(<?php echo $date_invoice_due;?>)
 	</p>
 
